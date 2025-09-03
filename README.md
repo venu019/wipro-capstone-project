@@ -106,8 +106,7 @@ npm start
 /busroute-service    # Bus and route management
 /trip-service        # Trip scheduling and seat inventory
 /booking-service     # Booking, cancellation, and payment
-/api-gateway         # Routing and security (optional)
-/eureka-server       # Service discovery (optional)
+/eureka-server       # Service discovery 
 /frontend            # React user and admin app
 ```
 
