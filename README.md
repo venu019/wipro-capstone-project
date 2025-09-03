@@ -46,9 +46,9 @@ A comprehensive, production-ready **Bus Ticket Booking System** built using Java
 
 ### Backend Setup
 
-```bash
-git clone https://github.com/yourusername/bus-ticket-booking.git
-cd bus-ticket-booking
+```bash[
+git clone https://github.com/venu019/wipro-capstone-project.git
+cd wipro-capstone-project
 ```
 
 1. Create a MySQL database (e.g., `busbooking`).
