@@ -67,9 +67,6 @@ mvn spring-boot:run
 cd ../booking-service
 mvn spring-boot:run
 
-cd ../api-gateway
-mvn spring-boot:run
-
 cd ../eureka-server
 mvn spring-boot:run
 ```
