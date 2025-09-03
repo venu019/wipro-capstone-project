@@ -48,7 +48,7 @@ A comprehensive, production-ready **Bus Ticket Booking System** built using Java
 
 ```bash[
 git clone https://github.com/venu019/wipro-capstone-project.git
-cd wipro-capstone-project
+cd wipro-capstone-project/backend
 ```
 
 1. Create a MySQL database (e.g., `busbooking`).
@@ -80,7 +80,7 @@ mvn spring-boot:run
 ### Frontend Setup
 
 ```bash
-cd frontend
+cd wipro-capstone-project
 npm install
 npm start
 ```
