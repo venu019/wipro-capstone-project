@@ -30,7 +30,6 @@ A comprehensive, production-ready **Bus Ticket Booking System** built using Java
 | Frontend        | React (Formik/Yup, Axios, Bootstrap)   |
 | Authentication  | JWT                                    |
 | Service Discovery | Eureka                               |
-| Containerization | Docker (optional)                      |
 
 ***
 
