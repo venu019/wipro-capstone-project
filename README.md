@@ -1,84 +1,124 @@
-Bus Ticket Booking System (Microservices without API Gateway)
-A modular Microservices Architecture for online Bus Ticket Booking, built with Spring Boot and React. Each backend service operates independently without an API Gateway or service discovery, with the frontend directly communicating to each microservice.
+# Bus Ticket Booking System
 
-Architecture Overview
-Microservices:
+A comprehensive, production-ready **Bus Ticket Booking System** built using Java (Spring Boot, Spring Security, MySQL) for the backend and React for the frontend. Features include JWT authentication, real-time seat selection, booking and cancellation functionality, and an admin dashboard for managing buses, trips, routes, and bookings.
 
-User Service: Authentication, user registration, roles, JWT security.
+***
 
-Bus & Route Service: Manage buses, routes, seat layouts.
+## Features
 
-Trip Service: Create trips, schedule fares, real-time seat availability.
+- **User Registration & Login** (JWT Authentication)  
+- **Role-based Access Control** (User and Admin)  
+- **Bus & Route Management** (Admin)  
+- **Trip Scheduling & Fare Assignment**  
+- **Seat Selection with Real-Time Availability**  
+- **Passenger Details Form with Validation** (Formik + Yup)  
+- **Booking Creation and Cancellation**  
+- **Booking Summary and Payment Tracking**  
+- **Admin Dashboard:** Statistics on bookings, buses, active/cancelled trips  
+- **React Frontend with Responsive UI**  
+- **Secure REST API** using Spring Security  
+- **Microservices Architecture:** Separate services for User, Trip, Booking, and Bus/Route  
 
-Booking Service: Hold seats, booking confirmation, cancellation, and payment integration.
+***
 
-Frontend: React app that calls backend services directly.
+## Technology Stack
 
-Databases: Separate MySQL schemas for services or shared DB with service-specific tables.
+| Layer           | Technology                              |
+|-----------------|----------------------------------------|
+| Backend         | Java, Spring Boot, Spring Security, OpenFeign |
+| Database        | MySQL                                  |
+| Frontend        | React (Formik/Yup, Axios, Bootstrap)   |
+| Authentication  | JWT                                    |
+| Service Discovery | Eureka                               |
+| Containerization | Docker (optional)                      |
 
-No API Gateway: Frontend manages direct calls to each service's REST endpoints.
+***
 
-Security: Spring Security + JWT tokens passed from frontend to microservices for authorization.
+## Getting Started
 
-Features
-Role-based access control (User/Admin).
+### Prerequisites
 
-Real-time seat selection and booking.
+- JDK 17 or higher  
+- Node.js v16 or higher  
+- MySQL Server  
+- Maven  
+- (Optional) Docker & Docker Compose  
 
-Passenger details with form validation.
+### Backend Setup
 
-Booking lifecycle management including cancellation and refunds.
+```bash
+git clone https://github.com/yourusername/bus-ticket-booking.git
+cd bus-ticket-booking
+```
 
-Admin dashboard for operational insights.
+1. Create a MySQL database (e.g., `busbooking`).
+2. Update database credentials in each Spring Boot service's `application.properties` file.
+3. Run each microservice:
 
-Responsive UI built with React and Bootstrap.
-
-Secure HTTP endpoints with JWT authentication.
-
-Independent microservice deployments.
-
-Service Endpoints and Ports
-Service	Base URL	Main Endpoints
-User Service	http://localhost:9001/api/v1/	/auth/login, /auth/register
-Bus/Route	http://localhost:9002/api/v1/	/buses, /routes
-Trip Service	http://localhost:9003/api/v1/	/trips, /trips/search, /trips/{id}/seats
-Booking Service	http://localhost:9004/api/v1/	/bookings/hold, /bookings/confirm, /bookings/{id}/cancel
-Setup Instructions
-Prerequisites
-Java 17+
-
-Node.js 16+
-
-MySQL Server
-
-Backend Setup
-Clone the repo and navigate to each microservice folder.
-
-Configure MySQL connection in each service’s application.properties.
-
-Build & run each service independently:
-
-text
+```bash
 cd user-service
 mvn spring-boot:run
+
 cd ../busroute-service
 mvn spring-boot:run
-# similarly for trip-service and booking-service
-Frontend Setup
-Navigate to React frontend folder.
 
-Install dependencies:
+cd ../trip-service
+mvn spring-boot:run
 
-text
+cd ../booking-service
+mvn spring-boot:run
+
+cd ../api-gateway
+mvn spring-boot:run
+
+cd ../eureka-server
+mvn spring-boot:run
+```
+
+*Alternatively, use Docker Compose for multi-service deployment.*
+
+### Frontend Setup
+
+```bash
+cd frontend
 npm install
-Run the React app:
-
-text
 npm start
-Frontend-Backend Interaction
-The frontend directly calls microservices via base URLs above.
+```
 
-JWT received on login is sent in Authorization headers for subsequent requests.
+- The app will be accessible at [http://localhost:3000](http://localhost:3000).
 
-The frontend handles API errors like 401 (unauthorized) or 409 (seat conflict).
+***
 
+## Usage
+
+- **Customer:** Register, login, search trips, select and book seats, view/cancel bookings.  
+- **Admin:** Login, manage buses/routes/trips, pricing, cancel trips, view reports and stats.
+
+### Booking Flow
+
+1. Search for buses by origin, destination, date, and type.  
+2. Select a trip and choose available seats visually on a seat map.  
+3. Enter passenger details and contact information.  
+4. Confirm booking; admin manages confirmation and cancellation if required.
+
+***
+
+## Project Structure
+
+```
+/user-service        # User authentication and roles
+/busroute-service    # Bus and route management
+/trip-service        # Trip scheduling and seat inventory
+/booking-service     # Booking, cancellation, and payment
+/api-gateway         # Routing and security (optional)
+/eureka-server       # Service discovery (optional)
+/frontend            # React user and admin app
+```
+
+***
+
+## Contributing
+
+Contributions, bug reports, feature requests are welcome! Please open issues or submit pull requests.
+
+***
