@@ -8,12 +8,18 @@ import BusList from './components/user/buslist';
 import MyBookings from './components/user/mybookings';
 import Login from './components/user/login';
 import Register from './components/user/register';
-import AdminDashboard from './components/admin/dashboard';
-import AdminBusManagement from './components/admin/bus';
-import AdminRouteManagement from './components/admin/busroutes';
-import AdminTripManagement from './components/admin/trip';
 import { UserPrivateRoute, AdminPrivateRoute } from './components/auth/authroute';
 import { AuthContext } from './components/auth/authprovider';
+import VerifyLoginOtp from './components/user/verfiy';
+import VerifyRegisterOtp from './components/user/regverfiy';
+import PreLoginHome from "./components/user/prelogin";
+import SellerBusManagement from "./components/admin/bus";
+import SellerRouteManagement from "./components/admin/busroutes";
+import SellerTripManagement from "./components/admin/trip";
+import SellerDashboard from "./components/admin/dashboard";
+import AdminUserManagement from "./components/mainadmin/AdminUserManagement";
+import AdminSellerManagement from "./components/mainadmin/AdminSellerManagement";
+import AdminAnalyticsDashboard from "./components/mainadmin/AdminAnalyticsDashboard";
 
 function App() {
   const { auth } = useContext(AuthContext);
@@ -31,8 +37,13 @@ function App() {
       <main>
         <Routes>
           {/* Public routes */}
+          <Route path="/prelogin" element={<PreLoginHome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-login-otp" element={<VerifyLoginOtp />} />
+          <Route path="/verify-register-otp" element={<VerifyRegisterOtp />} />
+
+
 
           {/* User protected routes */}
           <Route element={<UserPrivateRoute />}>
@@ -43,11 +54,16 @@ function App() {
 
           {/* Admin protected routes */}
           <Route element={<AdminPrivateRoute />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/buses" element={<AdminBusManagement />} />
-            <Route path="/admin/routes" element={<AdminRouteManagement />} />
-            <Route path="/admin/trips" element={<AdminTripManagement />} />
+            <Route path="/admin" element={<SellerDashboard />} />
+            <Route path="/admin/buses" element={<SellerBusManagement />} />
+            <Route path="/admin/routes" element={<SellerRouteManagement />} />
+            <Route path="/admin/trips" element={<SellerTripManagement />} />
           </Route>
+
+          <Route path="/admin/user" element={<AdminUserManagement />} />
+          <Route path="/admin/seller" element={<AdminSellerManagement />} />
+          <Route path="/admin/analysis" element={<AdminAnalyticsDashboard />} />
+
         </Routes>
       </main>
       {isLoggedIn&&<Footer />}

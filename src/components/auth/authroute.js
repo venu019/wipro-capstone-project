@@ -51,7 +51,7 @@ export const AdminPrivateRoute = () => {
   }
 
   // Valid admin token
-  if (role === 'ADMIN') {
+  if (role === 'SELLER' || role === 'ADMIN') {
     return <Outlet />;
   }
 

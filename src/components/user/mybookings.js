@@ -9,74 +9,73 @@ const MyBookings = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
+    async function loadData() {
       const userId = localStorage.getItem("userId");
+      const token = localStorage.getItem("token");
+
       if (!userId) {
-        console.error("User ID not found in localStorage");
         setBookings([]);
         setLoading(false);
         return;
       }
 
       try {
-        // Fetch bookings
-        const bookingsRes = await axios.get(
+        // Load bookings
+        const bookingRes = await axios.get(
           `http://localhost:9004/api/v1/bookings/user/${userId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        const bookingsData = bookingsRes.data;
-        setBookings(bookingsData);
 
-        // Extract unique tripIds
-        const uniqueTripIds = [...new Set(bookingsData.map((b) => b.tripId))];
+        const bookingList = bookingRes.data;
+        setBookings(bookingList);
 
-        // Fetch trip details
-        const tripDetails = {};
-        for (const tripId of uniqueTripIds) {
+        const tripMap = {};
+        const busMap = {};
+        const routeMap = {};
+
+        for (const b of bookingList) {
           try {
             const tripRes = await axios.get(
-              `http://localhost:9003/api/v1/trips/${tripId}`,
-              { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+              `http://localhost:9003/api/v1/trips/${b.tripId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
             );
             const trip = tripRes.data;
+            tripMap[b.tripId] = trip;
 
-            tripDetails[tripId] = trip;
-
-            // Fetch bus details if not fetched yet
-            if (!buses[trip.busId]) {
+            if (!busMap[trip.busId]) {
               const busRes = await axios.get(
                 `http://localhost:9002/api/v1/buses/${trip.busId}`,
-                { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+                { headers: { Authorization: `Bearer ${token}` } }
               );
-              setBuses((prev) => ({ ...prev, [trip.busId]: busRes.data }));
+              busMap[trip.busId] = busRes.data;
             }
 
-            // Fetch route details if not fetched yet
-            if (!routes[trip.routeId]) {
+            if (!routeMap[trip.routeId]) {
               const routeRes = await axios.get(
                 `http://localhost:9002/api/v1/routes/${trip.routeId}`,
-                { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+                { headers: { Authorization: `Bearer ${token}` } }
               );
-              setRoutes((prev) => ({ ...prev, [trip.routeId]: routeRes.data }));
+              routeMap[trip.routeId] = routeRes.data;
             }
-          } catch (error) {
-            console.warn(`Failed to fetch info for trip ${tripId}`, error);
-          }
+          } catch {}
         }
-        setTrips(tripDetails);
 
-      } catch (error) {
-        console.error("Failed to load bookings", error);
+        setTrips(tripMap);
+        setBuses(busMap);
+        setRoutes(routeMap);
+      } catch (e) {
         setBookings([]);
       } finally {
         setLoading(false);
       }
     }
-    fetchData();
+
+    loadData();
   }, []);
 
-  const handleCancel = async (bookingId) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+  // Cancel booking
+  const cancelBooking = async (bookingId) => {
+    if (!window.confirm("Are you sure you want to cancel?")) return;
 
     try {
       await axios.post(
@@ -87,103 +86,156 @@ const MyBookings = () => {
 
       setBookings((prev) =>
         prev.map((b) =>
-          b.bookingId === bookingId ? { ...b, status: "Cancelled" } : b
+          b.bookingId === bookingId ? { ...b, status: "CANCELLED" } : b
         )
       );
 
-      alert("Booking cancelled.");
-    } catch (error) {
-      console.error("Failed to cancel booking", error);
-      alert("Failed to cancel booking, please try again.");
+      alert("Booking Cancelled Successfully");
+    } catch {
+      alert("Failed to cancel booking.");
     }
   };
 
-  if (loading) return <div className="container my-4">Loading bookings...</div>;
+  if (loading)
+    return (
+      <div className="text-center mt-5 fw-bold fs-4 text-secondary">
+        Loading your bookings...
+      </div>
+    );
 
   if (bookings.length === 0)
     return (
-      <div className="container my-4">
-        <p>You have no bookings.</p>
+      <div className="text-center mt-5 fw-bold fs-5 text-muted">
+        No bookings found.
       </div>
     );
 
   return (
     <div className="container my-4">
-      <h2>My Bookings</h2>
-      <div className="row g-3">
-        {bookings.map(
-          ({
-            bookingId,
-            passengers,
-            seats,
-            status,
-            totalAmount,
-            tripId,
-            bookingDate,
-          }) => {
-            const trip = trips[tripId];
-            const bus = trip && buses[trip.busId];
-            const route = trip && routes[trip.routeId];
 
-            return (
-              <div key={bookingId} className="col-md-6">
-                <div className="card shadow-sm">
-                  <div className="card-body">
-                    <h5 className="card-title">
-                      {bus ? `${bus.busNumber} (${bus.busType})` : "trip Cancelled..."}
-                    </h5>
-                    <p className="card-text">
-                      <strong>Booking ID:</strong> {bookingId}
-                      <br />
-                      <strong>Route:</strong>{" "}
-                      {route
-                        ? `${route.source || route.from} → ${
-                            route.destination || route.to
-                          }`
-                        : "Loading route..."}
-                      <br />
-                      <strong>Departure Time:</strong>{" "}
-                      {trip
-                        ? new Date(trip.departureTime).toLocaleString()
-                        : "Loading..."}
-                      <br />
-                      <strong>Booking Date:</strong>{" "}
-                      {new Date(bookingDate).toLocaleString()}
-                      <br />
-                      <strong>Seats:</strong> {seats.map((s) => s.seatNumber).join(", ")}
-                      <br />
-                      <strong>Passengers:</strong> {passengers.map(p => p.name).join(", ")}
+      {/* ===== PAGE TITLE ===== */}
+      <h2 className="fw-bold text-center mb-4">My Bookings</h2>
 
-                      <br />
-                      <strong>Total Price:</strong> ₹{totalAmount.toFixed(2)}
-                      <br />
-                      <strong>Status:</strong>{" "}
-                      <span
-                        className={`badge ${
-                          status === "CONFIRMED" ? "bg-success" : "bg-secondary"
-                        }`}
-                      >
-                        {status}
-                      </span>
-                    </p>
-                    {status === "CONFIRMED" ? (
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleCancel(bookingId)}
-                      >
-                        Cancel Booking
-                      </button>
-                    ) : (
-                      <button className="btn btn-secondary btn-sm" disabled>
-                        Cancelled
-                      </button>
-                    )}
-                  </div>
+      <style>
+        {`
+          .booking-card {
+            backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.65);
+            border-radius: 18px;
+            transition: 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.4);
+          }
+          .booking-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0px 12px 45px rgba(0,0,0,0.15);
+          }
+          .bus-img {
+            height: 160px;
+            width: 100%;
+            object-fit: cover;
+            border-radius: 14px 14px 0 0;
+          }
+          .cancel-btn {
+            transition: 0.3s;
+          }
+          .cancel-btn:hover {
+            background: #b10606 !important;
+          }
+          .badge-status {
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+          }
+          .badge-confirmed {
+            background: #0ca92c;
+            color: white;
+            box-shadow: 0 0 8px rgba(0,255,0,0.5);
+          }
+          .badge-cancelled {
+            background: #777;
+            color: white;
+          }
+        `}
+      </style>
+
+      <div className="row g-4">
+        {bookings.map((booking) => {
+          const trip = trips[booking.tripId];
+          const bus = trip ? buses[trip.busId] : null;
+          const route = trip ? routes[trip.routeId] : null;
+
+          return (
+            <div key={booking.bookingId} className="col-md-6">
+              <div className="booking-card shadow-sm">
+
+                {/* IMAGE */}
+                <img
+                  src="https://images.pexels.com/photos/219929/pexels-photo-219929.jpeg"
+                  className="bus-img"
+                  alt="Bus"
+                />
+
+                <div className="p-3">
+                  <h5 className="fw-bold">
+                    {bus ? `${bus.busNumber} (${bus.busType})` : "Trip Cancelled"}
+                  </h5>
+
+                  <p className="text-muted small mb-2">
+                    <i className="bi bi-geo-alt-fill text-danger"></i>{" "}
+                    {route
+                      ? `${route.source || route.from} → ${
+                          route.destination || route.to
+                        }`
+                      : "Loading route..."}
+                  </p>
+
+                  <p className="small">
+                    <strong>Booking ID:</strong> {booking.bookingId}
+                    <br />
+                    <strong>Date:</strong>{" "}
+                    {new Date(booking.bookingDate).toLocaleString()}
+                    <br />
+                    <strong>Departure:</strong>{" "}
+                    {trip ? new Date(trip.departureTime).toLocaleString() : ""}
+                    <br />
+                    <strong>Seats:</strong>{" "}
+                    {booking.seats.map((s) => s.seatNumber).join(", ")}
+                    <br />
+                    <strong>Passengers:</strong>{" "}
+                    {booking.passengers.map((p) => p.name).join(", ")}
+                    <br />
+                    <strong>Total:</strong> ₹{booking.totalAmount.toFixed(2)}
+                    <br />
+                    <strong>Status:</strong>{" "}
+                    <span
+                      className={`badge-status ${
+                        booking.status === "CONFIRMED"
+                          ? "badge-confirmed"
+                          : "badge-cancelled"
+                      }`}
+                    >
+                      {booking.status}
+                    </span>
+                  </p>
+
+                  {/* BUTTONS */}
+                  {booking.status === "CONFIRMED" ? (
+                    <button
+                      className="btn btn-danger btn-sm cancel-btn mt-2"
+                      onClick={() => cancelBooking(booking.bookingId)}
+                    >
+                      Cancel Booking
+                    </button>
+                  ) : (
+                    <button className="btn btn-secondary btn-sm mt-2" disabled>
+                      Cancelled
+                    </button>
+                  )}
                 </div>
               </div>
-            );
-          }
-        )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,115 +1,177 @@
-import React, { useContext } from "react";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
-import { AuthContext } from "../auth/authprovider";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 
+// --- MATERIAL-UI IMPORTS ---
+import {
+  Container,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Box,
+  Alert,
+  CircularProgress,
+  Link,
+} from "@mui/material";
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+
+// --- API ENDPOINTS ---
+const USER_LOGIN_URL = "http://localhost:9001/api/v1/auth/login";
+const SELLER_LOGIN_URL = "http://localhost:9001/api/auth/seller/login";
+
+// --- VALIDATION SCHEMA ---
 const loginValidationSchema = Yup.object({
-  email: Yup.string().email("Invalid email address").required("Required"),
-  password: Yup.string().min(4, "Must be at least 4 characters").required("Required"),
+  email: Yup.string().email("Enter a valid email").required("Email is required"),
+  password: Yup.string().required("Password is required"),
 });
 
+// --- THEME ---
+const theme = createTheme();
+
 const Login = () => {
-  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [role, setRole] = useState("USER"); // 'USER' or 'SELLER'
 
   const formik = useFormik({
-    initialValues: { email: "", password: "" },
+    initialValues: {
+      email: "",
+      password: "",
+    },
     validationSchema: loginValidationSchema,
-    onSubmit: async (values) => {
+    onSubmit: async (values, { setSubmitting }) => {
+      setError("");
+      
+      const loginUrl = role === 'SELLER' ? SELLER_LOGIN_URL : USER_LOGIN_URL;
+      console.log(loginUrl);
+      
       try {
-        const response = await axios.post('http://localhost:9001/api/v1/auth/login', values);
-        const data = response.data;
+        await axios.post(loginUrl, values);
+        console.log(loginUrl);
 
-        login(data.accessToken, data.role, data.userId);
+        // On success, navigate to the unified OTP page with email and role
+        navigate("/verify-login-otp", {
+          state: { email: values.email, role: role },
+        });
 
-        if (data.role === 'ADMIN') {
-          navigate('/admin');
-        } else {
-          navigate('/');
-        }
-      } catch (error) {
-        if (error.response?.data?.message) {
-          alert(error.response.data.message);
-        } else {
-          alert("Login error: " + error.message);
-        }
+      } catch (err) {
+        setError(err.response?.data?.message || err.response?.data || "Login failed. Please check your credentials.");
       }
+      setSubmitting(false);
     },
   });
 
   return (
-    <div
-      className="d-flex align-items-center justify-content-center min-vh-100 bg-light"
-      style={{ padding: "1rem" }}
-    >
-      <div className="card shadow-lg p-4 rounded-2" style={{ maxWidth: "420px", width: "100%" }}>
-        <h2 className="text-center mb-4 fw-bold">Login</h2>
-        <form onSubmit={formik.handleSubmit} noValidate>
-          <div className="mb-4">
-            <label htmlFor="email" className="form-label fw-semibold">
-              Email address
-            </label>
-            <input
+    <ThemeProvider theme={theme}>
+      <Container component="main" maxWidth="xs">
+        <Paper
+          elevation={6}
+          sx={{
+            marginTop: 8,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: 4,
+          }}
+        >
+          <LockOutlinedIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+          <Typography component="h1" variant="h5" fontWeight="bold">
+            Sign In
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Welcome back! Please enter your details.
+          </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box
+            component="form"
+            onSubmit={formik.handleSubmit}
+            noValidate
+            sx={{ mt: 1, width: '100%' }}
+          >
+            {/* --- ROLE SELECTION --- */}
+            <FormControl component="fieldset" margin="normal">
+              <FormLabel component="legend">Login as</FormLabel>
+              <RadioGroup
+                row
+                aria-label="role"
+                name="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                <FormControlLabel value="USER" control={<Radio />} label="User" />
+                <FormControlLabel value="SELLER" control={<Radio />} label="Seller" />
+              </RadioGroup>
+            </FormControl>
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
               id="email"
-              type="email"
+              label="Email Address"
               name="email"
-              className={`form-control shadow-sm ${
-                formik.touched.email && formik.errors.email ? "is-invalid" : ""
-              }`}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              value={formik.values.email}
-              placeholder="your.email@example.com"
               autoComplete="email"
-            />
-            {formik.touched.email && formik.errors.email && (
-              <div className="invalid-feedback">{formik.errors.email}</div>
-            )}
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="password" className="form-label fw-semibold">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              name="password"
-              className={`form-control shadow-sm ${
-                formik.touched.password && formik.errors.password ? "is-invalid" : ""
-              }`}
+              autoFocus
+              value={formik.values.email}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              value={formik.values.password}
-              placeholder="Enter your password"
-              autoComplete="current-password"
+              error={formik.touched.email && Boolean(formik.errors.email)}
+              helperText={formik.touched.email && formik.errors.email}
             />
-            {formik.touched.password && formik.errors.password && (
-              <div className="invalid-feedback">{formik.errors.password}</div>
-            )}
-          </div>
 
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <Link to="/forgot-password" className="small text-decoration-none text-primary">
-              Forgot Password?
-            </Link>
-          </div>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              error={formik.touched.password && Boolean(formik.errors.password)}
+              helperText={formik.touched.password && formik.errors.password}
+            />
 
-          <button type="submit" className="btn btn-primary w-100 fw-semibold shadow-sm">
-            Login
-          </button>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              disabled={formik.isSubmitting}
+            >
+              {formik.isSubmitting ? <CircularProgress size={24} /> : "Sign In & Get OTP"}
+            </Button>
 
-          <div className="mt-4 text-center small text-muted">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-decoration-none text-primary fw-semibold">
-              Register
-            </Link>
-          </div>
-        </form>
-      </div>
-    </div>
+            <Box display="flex" justifyContent="space-between">
+              <Link component={RouterLink} to="/forgot-password" variant="body2">
+                Forgot password?
+              </Link>
+              <Link component={RouterLink} to="/register" variant="body2">
+                {"Don't have an account? Sign Up"}
+              </Link>
+            </Box>
+          </Box>
+        </Paper>
+      </Container>
+    </ThemeProvider>
   );
 };
 
