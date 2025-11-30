@@ -71,7 +71,7 @@ const AdminNavbar = () => {
                   height="40"
                   className="rounded-circle me-2"
                 />
-                <span>{auth.role}</span>
+                <span>{auth.sellername}</span>
               </span>
               {dropdownOpen && (
                 <ul

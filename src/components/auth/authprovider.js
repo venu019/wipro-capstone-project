@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback((data) => {
     // **CHANGE**: Clear previous session data to prevent conflicts
     localStorage.clear();
+    console.log(data.sellername);
 
     // Store common and role-specific data
     localStorage.setItem("token", data.token);
@@ -51,6 +52,7 @@ export const AuthProvider = ({ children }) => {
     if (data.role === 'SELLER') {
       localStorage.setItem("sellerId", data.sellerId);
       localStorage.setItem("travelsName", data.travelsName);
+localStorage.setItem("sellerName", data.sellername);
     } else { // For USER or ADMIN
       localStorage.setItem("userId", data.userId);
     }

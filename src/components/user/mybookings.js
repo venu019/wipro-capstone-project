@@ -8,6 +8,89 @@ const MyBookings = () => {
   const [routes, setRoutes] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // ---------------------------
+  // DOWNLOAD TICKET FUNCTION
+  // ---------------------------
+  const downloadTicket = (booking, trip, bus, route) => {
+    if (!booking || !trip || !bus || !route) {
+      alert("Ticket not ready! Try again in 2 seconds.");
+      return;
+    }
+
+    const ticketWindow = window.open("", "_blank", "width=800,height=600");
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Ticket - ${booking.bookingId}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; }
+            .ticket-box {
+              border: 2px solid #222;
+              padding: 20px;
+              border-radius: 10px;
+            }
+            h2 { text-align: center; margin-bottom: 20px; }
+            .section { margin-bottom: 12px; }
+            .label { font-weight: bold; }
+            .divider {
+              height: 2px;
+              background: #333;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="ticket-box">
+
+            <h2>BUS E-TICKET</h2>
+
+            <div class="section">
+              <div><span class="label">Booking ID:</span> ${booking.bookingId}</div>
+              <div><span class="label">Status:</span> ${booking.status}</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div><span class="label">Bus:</span> ${bus.busNumber} (${bus.busType})</div>
+              <div><span class="label">Route:</span> ${route.source} → ${route.destination}</div>
+              <div><span class="label">Departure:</span> ${new Date(trip.departureTime).toLocaleString()}</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div><span class="label">Seats:</span> ${booking.seats.map(s => s.seatNumber).join(", ")}</div>
+              <div><span class="label">Passengers:</span> ${booking.passengers.map(p => p.name).join(", ")}</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <div><span class="label">Total Amount:</span> ₹${booking.totalAmount.toFixed(2)}</div>
+              <div><span class="label">Booking Date:</span> ${new Date(booking.bookingDate).toLocaleString()}</div>
+            </div>
+
+          </div>
+
+          <script>
+            window.onload = () => {
+              window.print();
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    ticketWindow.document.write(htmlContent);
+    ticketWindow.document.close();
+  };
+
+  // -------------------------------------
+  // LOAD BOOKINGS
+  // -------------------------------------
   useEffect(() => {
     async function loadData() {
       const userId = localStorage.getItem("userId");
@@ -20,7 +103,6 @@ const MyBookings = () => {
       }
 
       try {
-        // Load bookings
         const bookingRes = await axios.get(
           `http://localhost:9004/api/v1/bookings/user/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -73,7 +155,9 @@ const MyBookings = () => {
     loadData();
   }, []);
 
-  // Cancel booking
+  // -------------------------------------
+  // CANCEL BOOKING
+  // -------------------------------------
   const cancelBooking = async (bookingId) => {
     if (!window.confirm("Are you sure you want to cancel?")) return;
 
@@ -96,6 +180,9 @@ const MyBookings = () => {
     }
   };
 
+  // -------------------------------------
+  // UI RENDER
+  // -------------------------------------
   if (loading)
     return (
       <div className="text-center mt-5 fw-bold fs-4 text-secondary">
@@ -112,8 +199,6 @@ const MyBookings = () => {
 
   return (
     <div className="container my-4">
-
-      {/* ===== PAGE TITLE ===== */}
       <h2 className="fw-bold text-center mb-4">My Bookings</h2>
 
       <style>
@@ -135,9 +220,6 @@ const MyBookings = () => {
             object-fit: cover;
             border-radius: 14px 14px 0 0;
           }
-          .cancel-btn {
-            transition: 0.3s;
-          }
           .cancel-btn:hover {
             background: #b10606 !important;
           }
@@ -149,7 +231,6 @@ const MyBookings = () => {
           .badge-confirmed {
             background: #0ca92c;
             color: white;
-            box-shadow: 0 0 8px rgba(0,255,0,0.5);
           }
           .badge-cancelled {
             background: #777;
@@ -167,8 +248,6 @@ const MyBookings = () => {
           return (
             <div key={booking.bookingId} className="col-md-6">
               <div className="booking-card shadow-sm">
-
-                {/* IMAGE */}
                 <img
                   src="https://images.pexels.com/photos/219929/pexels-photo-219929.jpeg"
                   className="bus-img"
@@ -181,11 +260,8 @@ const MyBookings = () => {
                   </h5>
 
                   <p className="text-muted small mb-2">
-                    <i className="bi bi-geo-alt-fill text-danger"></i>{" "}
                     {route
-                      ? `${route.source || route.from} → ${
-                          route.destination || route.to
-                        }`
+                      ? `${route.source} → ${route.destination}`
                       : "Loading route..."}
                   </p>
 
@@ -218,14 +294,25 @@ const MyBookings = () => {
                     </span>
                   </p>
 
-                  {/* BUTTONS */}
+                  {/* BUTTONS SECTION */}
                   {booking.status === "CONFIRMED" ? (
-                    <button
-                      className="btn btn-danger btn-sm cancel-btn mt-2"
-                      onClick={() => cancelBooking(booking.bookingId)}
-                    >
-                      Cancel Booking
-                    </button>
+                    <>
+                      <button
+                        className="btn btn-primary btn-sm mt-2 me-2"
+                        onClick={() =>
+                          downloadTicket(booking, trip, bus, route)
+                        }
+                      >
+                        Download Ticket
+                      </button>
+
+                      <button
+                        className="btn btn-danger btn-sm cancel-btn mt-2"
+                        onClick={() => cancelBooking(booking.bookingId)}
+                      >
+                        Cancel Booking
+                      </button>
+                    </>
                   ) : (
                     <button className="btn btn-secondary btn-sm mt-2" disabled>
                       Cancelled
