@@ -144,7 +144,7 @@ const SellerRouteManagement = () => {
   return (
     <div className="page">
       <style>{css}</style>
-      <AdminNavbar />
+      {/* <AdminNavbar /> */}
 
       <div className="title">My Route Management</div>
       <div className="subtitle">Manage routes for <strong>{travelsName || 'your agency'}</strong>. Add, edit, or remove operating routes.</div>

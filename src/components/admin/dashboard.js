@@ -32,186 +32,71 @@ const styles = `
 .pagination{display:flex;gap:10px;margin-top:16px;}
 .pbtn{padding:9px 12px;border-radius:8px;background:white;border:1px solid var(--border);cursor:pointer;font-size:14px;font-weight:600;}
 .pbtn[disabled]{opacity:.45;cursor:not-allowed;}
-.pdf-controls{display:flex;gap:12px;align-items:center;}
+.pdf-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
 .btn-primary{background:var(--primary);color:white;padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700;}
-.btn-secondary{background:white;border:1px solid var(--border);padding:10px 14px;border-radius:10px;cursor:pointer;}
+.btn-secondary{background:white;border:1px solid var(--border);padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;}
+.btn-secondary:hover{background:#f8fafc;}
+.btn-secondary:disabled{background:#f1f5f9;color:var(--muted);cursor:not-allowed;}
 .fadeIn{animation:fadeIn .5s ease-out;}
 @keyframes fadeIn{from{opacity:0} to{opacity:1}}
 `;
 
 /* ---------------------------
-   Utility: dynamic script loader
+   DOWNLOAD TRIP BOOKINGS PDF FROM BACKEND
    --------------------------- */
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const existing = Array.from(document.getElementsByTagName("script")).find(s => s.src === src);
-    if (existing) {
-      if (existing.getAttribute("data-loaded") === "true") return resolve();
-      existing.addEventListener("load", () => {
-        existing.setAttribute("data-loaded", "true");
-        resolve();
-      });
-      existing.addEventListener("error", reject);
-      return;
+const downloadTripBookingsPdf = async (tripId, event) => {
+  try {
+    const token = localStorage.getItem("token");
+    const button = event?.target;
+    
+    // Show loading state
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = "Generating PDF...";
     }
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => {
-      s.setAttribute("data-loaded", "true");
-      resolve();
-    };
-    s.onerror = (e) => reject(e);
-    document.head.appendChild(s);
-  });
-}
 
-/* ---------------------------
-   createPdfFromRows
-   - loads html2canvas + jsPDF from CDN
-   - builds offscreen HTML table, renders to canvas, slices pages, saves PDF
-   --------------------------- */
-async function createPdfFromRows(rows, title = "Bookings") {
-  if (!rows || rows.length === 0) {
-    alert("No rows to download for this status.");
-    return;
-  }
-
-  const HTML2CANVAS = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-  const JSPDF = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-
-  try {
-    await loadScript(HTML2CANVAS);
-    await loadScript(JSPDF);
-  } catch (err) {
-    console.error("Failed to load PDF libraries:", err);
-    alert("Unable to load PDF libraries. Please check your connection and try again.");
-    return;
-  }
-
-  // build off-screen container
-  const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.left = "-9999px";
-  container.style.top = "0";
-  container.style.width = "1200px";
-  container.style.background = "white";
-  container.id = "pdf-offscreen-container";
-
-  const headerHtml = `
-    <div style="padding:12px 16px;border-bottom:1px solid #e6e8ee;">
-      <h2 style="margin:0;font-family:Inter,Arial,Helvetica,sans-serif">${title}</h2>
-      <div style="margin-top:4px;color:#6f7683;font-size:13px">Generated: ${new Date().toLocaleString()}</div>
-    </div>
-  `;
-
-  const tableHead = `
-    <thead>
-      <tr>
-        <th>Booking ID</th>
-        <th>Status</th>
-        <th>Amount</th>
-        <th>Seats</th>
-        <th>Trip/Bus</th>
-        <th>Date</th>
-        <th>Passengers</th>
-      </tr>
-    </thead>
-  `;
-
-  const tableRowsHtml = rows.map(r => {
-    const seats = (r.seats || []).map(s => s.seatNumber).join(", ");
-    const passengers = (r.passengers || []).map(p => `${p.name}${p.age ? ` (${p.age})` : ""}`).join("; ");
-    const route = r.routeName || "N/A";
-    const bus = r.busNumber || "N/A";
-    const date = r.bookingDate ? new Date(r.bookingDate).toLocaleString() : "N/A";
-    return `
-      <tr>
-        <td>${r.bookingId}</td>
-        <td>${r.status}</td>
-        <td>₹${r.totalAmount ?? ""}</td>
-        <td>${seats}</td>
-        <td>${bus} / ${route}</td>
-        <td>${date}</td>
-        <td>${passengers}</td>
-      </tr>
-    `;
-  }).join("");
-
-  container.innerHTML = `
-    <style>
-      .pdf-wrap{padding:18px 20px;}
-      .pdf-table{width:100%;border-collapse:collapse;font-family:Inter,Arial,Helvetica,sans-serif;}
-      .pdf-table th{border:1px solid #e6e8ee;padding:8px;background:#fafbfc;text-align:left;font-weight:700;}
-      .pdf-table td{border:1px solid #e6e8ee;padding:8px;vertical-align:top;}
-    </style>
-    <div class="pdf-wrap">
-      ${headerHtml}
-      <table class="pdf-table">
-        ${tableHead}
-        <tbody>
-          ${tableRowsHtml}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  document.body.appendChild(container);
-
-  try {
-    // render to canvas
-    // html2canvas should be available at window.html2canvas
-    const canvas = await window.html2canvas(container, { scale: 1.5, useCORS: true, allowTaint: true });
-    const imgData = canvas.toDataURL("image/png");
-
-    const { jsPDF } = window.jspdf || (window.jspdf ? window.jspdf : window);
-    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgWidth = pageWidth - 40;
-    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-
-    if (imgHeight <= pageHeight - 40) {
-      pdf.addImage(imgData, "PNG", 20, 20, imgWidth, imgHeight);
-    } else {
-      // slicing approach
-      const tmpCanvas = document.createElement("canvas");
-      const tmpCtx = tmpCanvas.getContext("2d");
-      tmpCanvas.width = canvas.width;
-
-      const ratio = imgWidth / canvas.width;
-      tmpCanvas.height = Math.floor((pageHeight - 40) / ratio);
-
-      let y = 0;
-      let first = true;
-      while (y < canvas.height) {
-        tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
-        tmpCtx.drawImage(canvas, 0, y, tmpCanvas.width, tmpCanvas.height, 0, 0, tmpCanvas.width, tmpCanvas.height);
-        const sliceData = tmpCanvas.toDataURL("image/png");
-        if (!first) pdf.addPage();
-        pdf.addImage(sliceData, "PNG", 20, 20, imgWidth, (tmpCanvas.height * imgWidth) / tmpCanvas.width);
-        first = false;
-        y += tmpCanvas.height;
+    const response = await axios.get(
+      `http://localhost:9004/api/v1/pdf/trip/${tripId}/bookings`,
+      {
+        headers: { 
+          Authorization: `Bearer ${token}`
+        },
+        responseType: "blob"
       }
+    );
+
+    // Create blob and trigger download
+    const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    const link = document.createElement("a");
+    link.href = pdfUrl;
+    link.download = `trip_${tripId}_bookings.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Cleanup memory
+    setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
+
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = `Download Trip ${tripId} PDF`;
     }
-
-    const fileName = `${title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.pdf`;
-    pdf.save(fileName);
-
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    alert("Failed to generate PDF. See console for details.");
-  } finally {
-    const el = document.getElementById("pdf-offscreen-container");
-    if (el) el.remove();
+  } catch (error) {
+    console.error("PDF download error:", error);
+    alert("Failed to download trip bookings PDF. Please try again.");
+    
+    const button = event?.target;
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = `Download Trip ${tripId} PDF`;
+    }
   }
-}
+};
 
 /* ---------------------------
-   CSV helper
+   CSV helper (kept for CSV export)
    --------------------------- */
 function downloadCSV(filename, rows) {
   if (!rows || rows.length === 0) {
@@ -331,18 +216,12 @@ const SellerDashboard = () => {
     Date: d.bookingDate ? new Date(d.bookingDate).toLocaleString() : "", Passengers: (d.passengers || []).map(p => p.name).join("; ")
   }));
 
-  const handleDownloadStatusPDF = async (targetStatus) => {
-    const rows = flatBookings.filter(b => b.status === targetStatus);
-    const title = `${targetStatus}_Bookings`;
-    await createPdfFromRows(rows, title);
-  };
-
   if (loading) return <div className="admin-root">Loading Dashboard...</div>;
 
   return (
     <div className="admin-root fadeIn">
       <style>{styles}</style>
-      <AdminNavbar />
+      {/* <AdminNavbar /> */}
 
       <div className="topbar">
         <div>
@@ -390,8 +269,18 @@ const SellerDashboard = () => {
           </div>
 
           <div className="pdf-controls">
-            <button className="btn-secondary" onClick={() => handleDownloadStatusPDF("CONFIRMED")}>Download CONFIRMED PDF</button>
-            <button className="btn-secondary" onClick={() => handleDownloadStatusPDF("CANCELLED")}>Download CANCELLED PDF</button>
+            {Object.keys(bookingsByTrip).map(tripId => (
+              <button 
+                key={tripId}
+                className="btn-secondary" 
+                onClick={(e) => downloadTripBookingsPdf(tripId, e)}
+              >
+                Download Trip {tripId} PDF
+              </button>
+            ))}
+            {Object.keys(bookingsByTrip).length === 0 && (
+              <span className="small text-muted">No trips with bookings</span>
+            )}
           </div>
         </div>
 

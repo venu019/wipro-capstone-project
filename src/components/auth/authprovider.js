@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }) => {
     // **CHANGE**: Clear previous session data to prevent conflicts
     localStorage.clear();
     console.log(data.sellername);
+    console.log(data.role);
 
     // Store common and role-specific data
     localStorage.setItem("token", data.token);
@@ -53,6 +54,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("sellerId", data.sellerId);
       localStorage.setItem("travelsName", data.travelsName);
 localStorage.setItem("sellerName", data.sellername);
+localStorage.setItem("role", data.role);
     } else { // For USER or ADMIN
       localStorage.setItem("userId", data.userId);
     }

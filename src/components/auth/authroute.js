@@ -45,16 +45,45 @@ export const AdminPrivateRoute = () => {
     return <Navigate to="/login" />;
   }
 
-  // If user token is valid and tries to access admin route, redirect to home
   if (role === 'USER') {
     return <Navigate to="/" replace />;
   }
 
-  // Valid admin token
-  if (role === 'SELLER' || role === 'ADMIN') {
+  // ONLY SELLER allowed here
+  if (role === 'SELLER') {
     return <Outlet />;
   }
 
-  // Default fallback: redirect to login
+  // ADMIN redirected elsewhere
+  if (role === 'ADMIN') {
+    return <Navigate to="/admin/user" replace />;
+  }
+
+  return <Navigate to="/login" />;
+};
+
+
+
+export const MainAdminPrivateRoute = () => {
+  const { auth } = useContext(AuthContext);
+  const { token, role } = auth;
+
+  const validToken = isTokenValid(token);
+  if (!validToken) {
+    return <Navigate to="/login" />;
+  }
+
+  if (role === 'USER') {
+    return <Navigate to="/" replace />;
+  }
+
+  if (role === 'SELLER') {
+    return <Navigate to="/admin" replace />;  // Redirect sellers to seller dashboard
+  }
+
+  if (role === 'ADMIN') {
+    return <Outlet />;
+  }
+
   return <Navigate to="/login" />;
 };

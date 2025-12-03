@@ -120,7 +120,7 @@ const SellerBusManagement = () => {
 
   return (
     <div className="container my-4" style={{ minHeight: '450px' }}>
-      <AdminNavbar />
+      {/* <AdminNavbar /> */}
       <h3>My Bus Fleet</h3>
       <p>Operator: <strong>{operatorName || 'Not Available'}</strong></p>
 

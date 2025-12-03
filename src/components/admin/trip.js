@@ -173,7 +173,7 @@ const SellerTripManagement = () => {
   return (
     <div className="page">
       <style>{css}</style>
-      <AdminNavbar />
+      {/* <AdminNavbar /> */}
       <div className="title">My Trip Schedules</div>
       <div className="subtitle">Manage trips for <strong>{travelsName || "your agency"}</strong>.</div>
 

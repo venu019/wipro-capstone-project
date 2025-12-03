@@ -8,7 +8,7 @@ import BusList from './components/user/buslist';
 import MyBookings from './components/user/mybookings';
 import Login from './components/user/login';
 import Register from './components/user/register';
-import { UserPrivateRoute, AdminPrivateRoute } from './components/auth/authroute';
+import { UserPrivateRoute, AdminPrivateRoute ,MainAdminPrivateRoute} from './components/auth/authroute';
 import { AuthContext } from './components/auth/authprovider';
 import VerifyLoginOtp from './components/user/verfiy';
 import VerifyRegisterOtp from './components/user/regverfiy';
@@ -20,20 +20,22 @@ import SellerDashboard from "./components/admin/dashboard";
 import AdminUserManagement from "./components/mainadmin/AdminUserManagement";
 import AdminSellerManagement from "./components/mainadmin/AdminSellerManagement";
 import AdminAnalyticsDashboard from "./components/mainadmin/AdminAnalyticsDashboard";
+import MainAdminNavbar from "./components/mainadmin/MainAdminNavbar";
 
 function App() {
   const { auth } = useContext(AuthContext);
 
   const isLoggedIn = !!auth.token;
   const isUser = auth.role === 'USER';
-  const isAdmin = auth.role === 'ADMIN';
+  const isAdmin = auth.role === 'SELLER';
+  const ismainSeller = auth.role === 'ADMIN';
 
   return (
     <div className="App">
       {/* Conditionally render navbars */}
       {isLoggedIn && isUser && <UserNavbar />}
       {isLoggedIn && isAdmin && <AdminNavbar />}
-
+      {isLoggedIn && ismainSeller && <MainAdminNavbar />}
       <main>
         <Routes>
           {/* Public routes */}
@@ -52,17 +54,21 @@ function App() {
             <Route path="/bookings" element={<MyBookings />} />
           </Route>
 
-          {/* Admin protected routes */}
-          <Route element={<AdminPrivateRoute />}>
-            <Route path="/admin" element={<SellerDashboard />} />
-            <Route path="/admin/buses" element={<SellerBusManagement />} />
-            <Route path="/admin/routes" element={<SellerRouteManagement />} />
-            <Route path="/admin/trips" element={<SellerTripManagement />} />
-          </Route>
+          {/* Seller protected routes */}
+<Route element={<AdminPrivateRoute />}>
+  <Route path="/admin" element={<SellerDashboard />} />
+  <Route path="/admin/buses" element={<SellerBusManagement />} />
+  <Route path="/admin/routes" element={<SellerRouteManagement />} />
+  <Route path="/admin/trips" element={<SellerTripManagement />} />
+</Route>
 
-          <Route path="/admin/user" element={<AdminUserManagement />} />
-          <Route path="/admin/seller" element={<AdminSellerManagement />} />
-          <Route path="/admin/analysis" element={<AdminAnalyticsDashboard />} />
+{/* Main Admin protected routes */}
+<Route element={<MainAdminPrivateRoute />}>
+  <Route path="/admin/user" element={<AdminUserManagement />} />
+  <Route path="/admin/seller" element={<AdminSellerManagement />} />
+  <Route path="/admin/analysis" element={<AdminAnalyticsDashboard />} />
+</Route>
+
 
         </Routes>
       </main>

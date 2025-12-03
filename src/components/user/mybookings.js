@@ -9,83 +9,62 @@ const MyBookings = () => {
   const [loading, setLoading] = useState(true);
 
   // ---------------------------
-  // DOWNLOAD TICKET FUNCTION
+  // DOWNLOAD PDF TICKET FROM BACKEND
   // ---------------------------
-  const downloadTicket = (booking, trip, bus, route) => {
-    if (!booking || !trip || !bus || !route) {
-      alert("Ticket not ready! Try again in 2 seconds.");
+  const downloadTicket = async (booking, event) => {
+    if (!booking) {
+      alert("Ticket not ready! Try again later.");
       return;
     }
 
-    const ticketWindow = window.open("", "_blank", "width=800,height=600");
+    try {
+      const token = localStorage.getItem("token");
+      const button = event?.target;
+      
+      // Show loading state
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = "Downloading...";
+      }
 
-    const htmlContent = `
-      <html>
-        <head>
-          <title>Ticket - ${booking.bookingId}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            .ticket-box {
-              border: 2px solid #222;
-              padding: 20px;
-              border-radius: 10px;
-            }
-            h2 { text-align: center; margin-bottom: 20px; }
-            .section { margin-bottom: 12px; }
-            .label { font-weight: bold; }
-            .divider {
-              height: 2px;
-              background: #333;
-              margin: 20px 0;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="ticket-box">
+      const response = await axios.get(
+        `http://localhost:9004/api/v1/pdf/${booking.bookingId}/ticket`,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`
+          },
+          responseType: "blob" // Important for binary PDF data
+        }
+      );
 
-            <h2>BUS E-TICKET</h2>
+      // Create blob and trigger download
+      const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+      const pdfUrl = URL.createObjectURL(pdfBlob);
 
-            <div class="section">
-              <div><span class="label">Booking ID:</span> ${booking.bookingId}</div>
-              <div><span class="label">Status:</span> ${booking.status}</div>
-            </div>
+      const link = document.createElement("a");
+      link.href = pdfUrl;
+      link.download = `bus-ticket_${booking.bookingId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-            <div class="divider"></div>
+      // Cleanup memory
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
 
-            <div class="section">
-              <div><span class="label">Bus:</span> ${bus.busNumber} (${bus.busType})</div>
-              <div><span class="label">Route:</span> ${route.source} → ${route.destination}</div>
-              <div><span class="label">Departure:</span> ${new Date(trip.departureTime).toLocaleString()}</div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="section">
-              <div><span class="label">Seats:</span> ${booking.seats.map(s => s.seatNumber).join(", ")}</div>
-              <div><span class="label">Passengers:</span> ${booking.passengers.map(p => p.name).join(", ")}</div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="section">
-              <div><span class="label">Total Amount:</span> ₹${booking.totalAmount.toFixed(2)}</div>
-              <div><span class="label">Booking Date:</span> ${new Date(booking.bookingDate).toLocaleString()}</div>
-            </div>
-
-          </div>
-
-          <script>
-            window.onload = () => {
-              window.print();
-              window.close();
-            };
-          </script>
-        </body>
-      </html>
-    `;
-
-    ticketWindow.document.write(htmlContent);
-    ticketWindow.document.close();
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = "Download Ticket";
+      }
+    } catch (error) {
+      console.error("PDF download error:", error);
+      alert("Failed to download ticket. Please try again.");
+      
+      const button = event?.target;
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = "Download Ticket";
+      }
+    }
   };
 
   // -------------------------------------
@@ -146,6 +125,7 @@ const MyBookings = () => {
         setBuses(busMap);
         setRoutes(routeMap);
       } catch (e) {
+        console.error("Error loading bookings:", e);
         setBookings([]);
       } finally {
         setLoading(false);
@@ -201,43 +181,44 @@ const MyBookings = () => {
     <div className="container my-4">
       <h2 className="fw-bold text-center mb-4">My Bookings</h2>
 
-      <style>
-        {`
-          .booking-card {
-            backdrop-filter: blur(12px);
-            background: rgba(255,255,255,0.65);
-            border-radius: 18px;
-            transition: 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.4);
-          }
-          .booking-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0px 12px 45px rgba(0,0,0,0.15);
-          }
-          .bus-img {
-            height: 160px;
-            width: 100%;
-            object-fit: cover;
-            border-radius: 14px 14px 0 0;
-          }
-          .cancel-btn:hover {
-            background: #b10606 !important;
-          }
-          .badge-status {
-            padding: 6px 12px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-          }
-          .badge-confirmed {
-            background: #0ca92c;
-            color: white;
-          }
-          .badge-cancelled {
-            background: #777;
-            color: white;
-          }
-        `}
-      </style>
+      <style>{`
+        .booking-card {
+          backdrop-filter: blur(12px);
+          background: rgba(255,255,255,0.65);
+          border-radius: 18px;
+          transition: 0.3s ease;
+          border: 1px solid rgba(255,255,255,0.4);
+        }
+        .booking-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0px 12px 45px rgba(0,0,0,0.15);
+        }
+        .bus-img {
+          height: 160px;
+          width: 100%;
+          object-fit: cover;
+          border-radius: 14px 14px 0 0;
+        }
+        .cancel-btn:hover {
+          background: #b10606 !important;
+        }
+        .badge-status {
+          padding: 6px 12px;
+          border-radius: 50px;
+          font-size: 0.85rem;
+        }
+        .badge-confirmed {
+          background: #0ca92c;
+          color: white;
+        }
+        .badge-cancelled {
+          background: #777;
+          color: white;
+        }
+        .download-btn:disabled {
+          opacity: 0.6;
+        }
+      `}</style>
 
       <div className="row g-4">
         {bookings.map((booking) => {
@@ -298,10 +279,8 @@ const MyBookings = () => {
                   {booking.status === "CONFIRMED" ? (
                     <>
                       <button
-                        className="btn btn-primary btn-sm mt-2 me-2"
-                        onClick={() =>
-                          downloadTicket(booking, trip, bus, route)
-                        }
+                        className="btn btn-primary btn-sm mt-2 me-2 download-btn"
+                        onClick={(e) => downloadTicket(booking, e)}
                       >
                         Download Ticket
                       </button>
